@@ -26,7 +26,6 @@ class Collection():
 
     def get_document_by_id(self, id):
         """Gets the document for the given id.
-
         Returns:
             Document: The Document for the given id.
         """
@@ -34,7 +33,6 @@ class Collection():
 
     def num_documents(self):
         """Returns the number of documents.
-
         Returns:
             int: The number of documents in the collection.
         """
@@ -42,7 +40,6 @@ class Collection():
 
     def get_all_documents(self):
         """Creates an iterator that iterates through all documents in the collection.
-
         Returns:
             Iterable[Document]: All the documents in the collection.
         """
@@ -50,7 +47,6 @@ class Collection():
 
 class WikipediaArticle(Document):
     """A Wikipedia article.
-
     Attributes:
         title (str): The title. This will be unique so it can be used as the id. It will also always be less than 256 bytes.
         _text (str): The plain text version of the article body.
@@ -75,9 +71,7 @@ class WikipediaArticle(Document):
 
     def id(self):
         """Returns the id for the WikipediaArticle, which is its title.
-
         Override for Document.
-
         Returns:
             str: The id, which in the Wikipedia article's case, is the title.
         """
@@ -85,9 +79,7 @@ class WikipediaArticle(Document):
 
     def text(self):
         """Returns the text for the Document.
-
         Override for Document.
-
         Returns:
             str: Text for the Document
         """
@@ -102,7 +94,6 @@ class WikipediaCollection(Collection):
 
     def find_article_by_title(self, query):
         """Finds an article with a title matching the query.
-
         Returns:
             WikipediaArticle: Returns matching WikipediaArticle.
         """
@@ -124,9 +115,7 @@ class WikipediaCollection(Collection):
 
     def get_document_by_id(self, doc_id):
         """Gets the document (i.e. WikipediaArticle) for the given id (i.e. title).
-
         Override for Collectionself.
-
         Returns:
             WikipediaArticle: The WikipediaArticle for the given id.
         """
@@ -147,9 +136,7 @@ class WikipediaCollection(Collection):
 
     def num_documents(self):
         """Returns the number of documents (i.e. WikipediaArticle).
-
         Override for Collection.
-
         Returns:
             int: The number of documents in the collection.
         """
@@ -161,7 +148,6 @@ class WikipediaCollection(Collection):
 
     def get_all_documents(self):
         """Creates an iterator that iterates through all documents (i.e. WikipediaArticles) in the collection.
-
         Returns:
             Iterable[WikipediaArticle]: All the documents in the collection.
         """
@@ -195,7 +181,6 @@ class Index():
        self.collection = collection
 
    """Searches the index for documents that match the query.
-
    Returns:
        list: list of matching document ids
    """
@@ -239,6 +224,7 @@ class Index():
         return terms
 
    def search(self,query):
+        res = []
         all_size = self.collection.num_documents();
         terms = self.keitaiso_kaiseki(query)
         c = self.db.cursor()
@@ -254,7 +240,10 @@ class Index():
             df = 0
             for row in article_list:
                 df += 1
-            idf_list.append(math.log(all_size/df))
+            if df == 0:
+                idf_list.append(-1)
+            else:
+                idf_list.append(math.log(all_size/df))
             #このtermを含むdocのうちterm_frequencyが上から１０番目までのdocとterm_freqency
             article_list = c.execute('SELECT document_id, term_frequency FROM postings WHERE term =? ORDER BY term_frequency DESC LIMIT 10',(word,) )
 
@@ -284,7 +273,6 @@ class Index():
             naiseki = 0
             qlen = 0
             dlen = 0
-            res = []
             for query, d_tfidf in zip(query_vector,document_vector):
                 naiseki += query * d_tfidf
                 qlen += query * query
