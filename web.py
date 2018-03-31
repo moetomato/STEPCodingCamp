@@ -4,18 +4,21 @@ import json
 import os
 
 collection = wp.WikipediaCollection("./data/wp.db")
+index = wp.Index("./data/index.db",collection)
 
 @bottle.route('/action')
 def action():
    query = bottle.request.query.q
-   article = collection.find_article_by_title(query)
+   #article = collection.find_article_by_title(query)
+   articles = index.search(query)
    bottle.response.content_type = 'application/json'
-   if article is None:
+   if len(articles) == 0:
     return json.dumps({
         'textToSpeech': '見つかりません'
         }, indent=2, separators=(',', ': '), ensure_ascii=False)
    return json.dumps({
-      'textToSpeech': article.opening_text
+      #'textToSpeech': article.opening_text
+      'textToSpeech': 'か'.join(articles)
    }, indent=2, separators=(',', ': '), ensure_ascii=False)
 
 
