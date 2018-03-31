@@ -2,6 +2,7 @@ import sqlite3
 import sys
 import json
 from natto import MeCab
+import math
 
 nm = MeCab()
 
@@ -208,13 +209,10 @@ class Index():
        """)
        # indexingの処理を書く
        cnt = 0
+       c = self.db.cursor()
        for document in self.collection.get_all_documents():
            st = set()
            dict = {}
-
-           cnt += 1
-           if cnt == 10:
-                break
            id = document.id()
            for word in self.keitaiso_kaiseki(document.text()):
                if word in dict:
@@ -223,9 +221,13 @@ class Index():
                    dict[word] = 1
 
            for k,v in dict.items():
-               c = self.db.cursor()
                c.execute('insert into postings (term, document_id, term_frequency) values(?, ?, ?)', (k, id, v))
-       self.db.commit()
+           cnt += 1
+           if cnt > 10:
+               break
+           if cnt%10 == 0:
+               print(cnt)
+               self.db.commit()
 
    def keitaiso_kaiseki(self,sentence):
         nm = MeCab()
@@ -241,19 +243,69 @@ class Index():
         terms = self.keitaiso_kaiseki(query)
         c = self.db.cursor()
         self.db.commit()
-        dict = {}
+
+        #queryに含まれる各名詞についてtfが上位10番目までのdoc
+        st = set()
+        idf_list = []
         for term in terms:
             word = term
-            article_list = c.execute('SELECT document_id, time_freqency FROM postings WHERE term =?',(word,,))
-            size = 0
+            #df = このtermを含むdoc数
+            article_list = c.execute('SELECT document_id FROM postings WHERE term =?',(word,))
+            df = 0
             for row in article_list:
-                size += 1
-                if row[0] in dict:
-                    dict[row[0]] += 1
-                else:
-                    dict[row[0]] = 1
-            idf = log(all_size/size)
-            tf_idf =
+                df += 1
+            idf_list.append(math.log(all_size/df))
+            #このtermを含むdocのうちterm_frequencyが上から１０番目までのdocとterm_freqency
+            article_list = c.execute('SELECT document_id, term_frequency FROM postings WHERE term =? ORDER BY term_frequency DESC LIMIT 10',(word,) )
+
+            for row in article_list:
+                st.add(row[0])
+
+        # tfidf of query
+        query_vector = []
+        for idf in idf_list:
+            tf = 1
+            query_vector.append(tf*idf)
+
+        mn = 5
+        for document in st:
+            id = document
+
+            document_vector = []
+            for term,idf in zip(terms,idf_list):
+                #term = terms[i]
+
+                tf_list = c.execute('SELECT term_frequency FROM postings WHERE term = ? and document_id = ?',(term, id))
+
+                for tf in tf_list:
+                    tf_idf = tf[0]*idf
+                document_vector.append(tf_idf)
+
+            naiseki = 0
+            qlen = 0
+            dlen = 0
+            res = []
+            for query, d_tfidf in zip(query_vector,document_vector):
+                naiseki += query * d_tfidf
+                qlen += query * query
+                dlen += d_tfidf * d_tfidf
+            cosd = naiseki / (math.sqrt(qlen)*math.sqrt(dlen))
+
+            if (1 - cosd) < mn:
+                mn = 1 - cosd
+                ret = document
+            res.append(ret)
+
+
+
+
+
+                #if row[0] in dict:
+                    #dict[row[0]] += 1
+                #else:
+                    #dict[row[0]] = 1
+
+
 
 
         # mx = 0
