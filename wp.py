@@ -224,7 +224,6 @@ class Index():
         return terms
 
    def search(self,query):
-        res = []
         all_size = self.collection.num_documents();
         terms = self.keitaiso_kaiseki(query)
         c = self.db.cursor()
@@ -281,47 +280,7 @@ class Index():
 
             if (1 - cosd) < mn:
                 mn = 1 - cosd
-                ret = document
-            res.append(ret)
-
-
-
-
-
-                #if row[0] in dict:
-                    #dict[row[0]] += 1
-                #else:
-                    #dict[row[0]] = 1
-
-
-
-
-        # mx = 0
-        # for k,v in dict.items():
-        #     mx = max(mx,v)
-        #
-        # res = []
-        # for k,v in dict.items():
-        #     if v == mx:
-        #         res.append(k)
-
-        return res
-
-
-        #word=terms[0]
-        #article_list = c.execute('SELECT document_id FROM postings WHERE term =?',(word,))
-        #self.db.commit()
-        #res = []
-        #for row in article_list:
-            #print(type(row))
-            #res.append(row)
-
-        #for term in terms:
-            #list = c.execute('SELECT document_id FROM postings WHERE term =?',(word,))
-            #preset = {}
-            #for row in list:
-                #preset.add(row[0])
-            #res = res & preset
-
-
-        #return res
+                ret = self.collection.find_article_by_title(document)
+                str = ret.opening_text
+                print(type(str))
+                return str
