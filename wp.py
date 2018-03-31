@@ -235,16 +235,15 @@ class Index():
 
         for term in terms:
             if term == 'Google':
-                current_db = sqlite3.connect("./data/wp.db")
+                current_db = sqlite3.connect("./data/android.db")
                 c = current_db.cursor()
-                str = ('Androidのバージョン履歴',)
-                article_list = c.execute('SELECT title, wiki_text FROM articles WHERE title =?',str)
+                str = ('Ice Cream',)
+                article_list = c.execute('SELECT text FROM versions WHERE name =?',str)
                 for row in article_list:
-                    doc = row[0]
-                document = self.collection.find_article_by_title(doc)
-                str = document.opening_text
-                return str
-                
+                    str = row[0]
+                    print(str)
+                    return str
+
         for term in terms:
             word = term
             #df = このtermを含むdoc数
@@ -252,6 +251,7 @@ class Index():
             df = 0
             for row in article_list:
                 df += 1
+
             if df == 0:
                 idf_list.append(-1)
             else:
@@ -295,5 +295,4 @@ class Index():
                 mn = 1 - cosd
                 ret = self.collection.find_article_by_title(document)
                 str = ret.opening_text
-                print(type(str))
                 return str
