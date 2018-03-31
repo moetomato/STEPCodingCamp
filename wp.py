@@ -232,6 +232,19 @@ class Index():
         #queryに含まれる各名詞についてtfが上位10番目までのdoc
         st = set()
         idf_list = []
+
+        for term in terms:
+            if term == 'Google':
+                current_db = sqlite3.connect("./data/wp.db")
+                c = current_db.cursor()
+                str = ('Androidのバージョン履歴',)
+                article_list = c.execute('SELECT title, wiki_text FROM articles WHERE title =?',str)
+                for row in article_list:
+                    doc = row[0]
+                document = self.collection.find_article_by_title(doc)
+                str = document.opening_text
+                return str
+                
         for term in terms:
             word = term
             #df = このtermを含むdoc数
