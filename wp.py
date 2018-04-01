@@ -229,8 +229,8 @@ class Index():
         for term in terms:
             if term == 'かわいい' or term =='可愛い':
                 ope = 1
-            break
-        kawaii_dictionary = ['愛らしい','小さい','丸い','無邪気','人気']
+                break
+        kawaii_dictionary = ['愛','小さい','丸い','女子','人気']
         if ope == 1:
             for word in kawaii_dictionary:
                 terms.append(word)
@@ -268,7 +268,7 @@ class Index():
             else:
                 idf_list.append(math.log(all_size/df))
             #このtermを含むdocのうちterm_frequencyが上から１０番目までのdocとterm_freqency
-            article_list = c.execute('SELECT document_id, term_frequency FROM postings WHERE term =? ORDER BY term_frequency DESC LIMIT 10',(word,) )
+            article_list = c.execute('SELECT document_id FROM postings WHERE term =? ORDER BY term_frequency DESC LIMIT 10',(word,) )
 
             for row in article_list:
                 cnt += 1
