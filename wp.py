@@ -208,8 +208,6 @@ class Index():
            for k,v in dict.items():
                c.execute('insert into postings (term, document_id, term_frequency) values(?, ?, ?)', (k, id, v))
            cnt += 1
-           if cnt > 10:
-               break
            if cnt%10 == 0:
                print(cnt)
                self.db.commit()
@@ -219,31 +217,44 @@ class Index():
         terms = []
         for node in nm.parse(sentence, as_nodes=True):
             list = node.feature.split(',')
-            if list[0] == '名詞':
+            if list[0] == '名詞'or list[0] == '形容詞':
                 terms.append(node.surface)
+
         return terms
 
    def search(self,query):
         all_size = self.collection.num_documents();
         terms = self.keitaiso_kaiseki(query)
+        ope = 0
+        for term in terms:
+            if term == 'かわいい' or term =='可愛い':
+                ope = 1
+            break
+        kawaii_dictionary = ['愛らしい','小さい','丸い','無邪気','人気']
+        if ope == 1:
+            for word in kawaii_dictionary:
+                terms.append(word)
+        for word in terms:
+            print(word)
+
         c = self.db.cursor()
         self.db.commit()
-
         #queryに含まれる各名詞についてtfが上位10番目までのdoc
         st = set()
         idf_list = []
 
         for term in terms:
-            if term == 'Google':
+            if term == 'Google'or term == 'google':
                 current_db = sqlite3.connect("./data/android.db")
                 c = current_db.cursor()
-                str = ('Ice Cream',)
-                article_list = c.execute('SELECT text FROM versions WHERE name =?',str)
+                str = ('ice cream',)
+                article_list = c.execute('SELECT text from versions where name =? ',str)
                 for row in article_list:
                     str = row[0]
                     print(str)
                     return str
 
+        cnt = 0
         for term in terms:
             word = term
             #df = このtermを含むdoc数
@@ -260,8 +271,12 @@ class Index():
             article_list = c.execute('SELECT document_id, term_frequency FROM postings WHERE term =? ORDER BY term_frequency DESC LIMIT 10',(word,) )
 
             for row in article_list:
+                cnt += 1
                 st.add(row[0])
 
+            print(cnt)
+        if cnt == 0:
+            return []
         # tfidf of query
         query_vector = []
         for idf in idf_list:
@@ -269,26 +284,51 @@ class Index():
             query_vector.append(tf*idf)
 
         mn = 5
+        i = 0
         for document in st:
             id = document
+            i += 1
+            print('i:')
+            print(i)
 
             document_vector = []
+            count = 0
+            print("terms/idf_list:")
+            print(len(terms))
+            print(len(idf_list))
             for term,idf in zip(terms,idf_list):
+                count += 1
+                print("count:")
+                print(count)
                 #term = terms[i]
 
                 tf_list = c.execute('SELECT term_frequency FROM postings WHERE term = ? and document_id = ?',(term, id))
 
-                for tf in tf_list:
-                    tf_idf = tf[0]*idf
-                document_vector.append(tf_idf)
+                cnt = 0
+                for t in tf_list:
+                     cnt += 1
+                     print(t[0])
+                     document_vector.append(t[0])
+                print(cnt)
+
+                #
+                # if cnt == 0:
+                #     document_vector.append(0)
+                # else:
+                #     for tf in tf_list:
+                #         print(tf[0])
+                #         document_vector.append(tf[0]*idf)
 
             naiseki = 0
             qlen = 0
             dlen = 0
             for query, d_tfidf in zip(query_vector,document_vector):
+                print('a')
                 naiseki += query * d_tfidf
                 qlen += query * query
+                print(qlen)
                 dlen += d_tfidf * d_tfidf
+                print(dlen)
             cosd = naiseki / (math.sqrt(qlen)*math.sqrt(dlen))
 
             if (1 - cosd) < mn:
